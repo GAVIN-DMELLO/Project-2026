@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Summarizer - Extract Knowledge from PDFs & Videos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #1a1a2e;
+            --secondary-dark: #2d2d44;
+            --accent-gold: #d4af37;
+            --accent-cream: #f4f1de;
+            --text-light: #e8e8e8;
+            --text-muted: #a0a0b0;
+            --border-subtle: rgba(212, 175, 55, 0.2);
+            --shadow-deep: rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Crimson Pro', serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            line-height: 1.7;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(212, 175, 55, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+            opacity: 0;
+            animation: fadeInDown 0.8s ease forwards;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            text-shadow: 2px 2px 8px var(--shadow-deep);
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 0.03em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: rgba(45, 45, 68, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px var(--shadow-deep);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .card:nth-child(1) {
+            animation-delay: 0.2s;
+        }
+
+        .card:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-gold);
+            box-shadow: 0 12px 48px var(--shadow-deep);
+        }
+
+        .card-title {
+            font-size: 1.8rem;
+            color: var(--accent-cream);
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(26, 26, 46, 0.8);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]:hover,
+        input[type="text"]:hover {
+            border-color: var(--accent-gold);
+        }
+
+        input[type="file"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        input[type="file"]::file-selector-button {
+            background: var(--accent-gold);
+            color: var(--primary-dark);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background: var(--accent-cream);
+            transform: scale(1.05);
+        }
+
+        button {
+            width: 100%;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #c99d2e 100%);
+            color: var(--primary-dark);
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(212, 175, 55, 0.5);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(212, 175, 55, 0.2);
+            border-top-color: var(--accent-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .result-section {
+            display: none;
+            background: rgba(45, 45, 68, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 2.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 8px 32px var(--shadow-deep);
+        }
+
+        .result-section.show {
+            display: block;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .result-title {
+            font-size: 2rem;
+            color: var(--accent-gold);
+            margin-bottom: 2rem;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-subtle);
+            padding-bottom: 1rem;
+        }
+
+        .result-content {
+            font-size: 1.1rem;
+            line-height: 1.9;
+            color: var(--text-light);
+        }
+
+        .result-subsection {
+            margin-bottom: 2rem;
+        }
+
+        .result-subsection h3 {
+            color: var(--accent-cream);
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .result-subsection p {
+            margin-bottom: 1rem;
+        }
+
+        .result-subsection ul {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-subsection li {
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .equation {
+            background: rgba(26, 26, 46, 0.8);
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-cream);
+            margin: 1rem 0;
+            border-left: 4px solid var(--accent-gold);
+            overflow-x: auto;
+        }
+
+        .error-message {
+            background: rgba(220, 53, 69, 0.2);
+            color: #ff6b6b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border-left: 4px solid #ff6b6b;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Academic Summarizer</h1>
+            <p class="subtitle">Extract key concepts, equations, and insights from academic materials</p>
+        </header>
+
+        <div class="main-content">
+            <div class="card">
+                <h2 class="card-title">
+                    <span class="card-icon">📄</span>
+                    PDF Document
+                </h2>
+                <form id="pdfForm">
+                    <div class="form-group">
+                        <label for="pdfFile">Upload PDF File</label>
+                        <input type="file" id="pdfFile" accept=".pdf" required>
+                    </div>
+                    <button type="submit" id="pdfSubmit">Analyze PDF</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">
+                    <span class="card-icon">🎥</span>
+                    YouTube Video
+                </h2>
+                <form id="youtubeForm">
+                    <div class="form-group">
+                        <label for="youtubeUrl">YouTube Video URL</label>
+                        <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." required>
+                    </div>
+                    <button type="submit" id="youtubeSubmit">Analyze Video</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your content... This may take a moment.</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="result-section" id="resultSection">
+            <h2 class="result-title">Summary Results</h2>
+            <div class="result-content" id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000';
+
+        // PDF Form Handler
+        document.getElementById('pdfForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showError('Please select a PDF file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            await submitRequest('/api/summarize-pdf', formData);
+        });
+
+        // YouTube Form Handler
+        document.getElementById('youtubeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const urlInput = document.getElementById('youtubeUrl');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                showError('Please enter a YouTube URL');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('url', url);
+
+            await submitRequest('/api/summarize-youtube', formData);
+        });
+
+        async function submitRequest(endpoint, formData) {
+            const loadingEl = document.getElementById('loading');
+            const resultSection = document.getElementById('resultSection');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Show loading, hide results
+            loadingEl.style.display = 'block';
+            resultSection.classList.remove('show');
+            errorMessage.classList.remove('show');
+
+            // Disable buttons
+            document.getElementById('pdfSubmit').disabled = true;
+            document.getElementById('youtubeSubmit').disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'An error occurred while processing your request');
+                }
+            } catch (error) {
+                showError('Failed to connect to the server. Make sure the backend is running.');
+                console.error('Error:', error);
+            } finally {
+                loadingEl.style.display = 'none';
+                document.getElementById('pdfSubmit').disabled = false;
+                document.getElementById('youtubeSubmit').disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            const resultContent = document.getElementById('resultContent');
+            const resultSection = document.getElementById('resultSection');
+
+            let html = '';
+
+            // Summary
+            if (data.summary) {
+                html += `
+                    <div class="result-subsection">
+                        <h3>📝 Summary</h3>
+                        <p>${escapeHtml(data.summary)}</p>
+                    </div>
+                `;
+            }
+
+            // Key Concepts
+            if (data.key_concepts && data.key_concepts.length > 0) {
+                html += `
+                    <div class="result-subsection">
+                        <h3>💡 Key Concepts</h3>
+                        <ul>
+                            ${data.key_concepts.map(concept => `<li>${escapeHtml(concept)}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Equations
+            if (data.equations && data.equations.length > 0) {
+                html += `
+                    <div class="result-subsection">
+                        <h3>📐 Equations & Formulas</h3>
+                        ${data.equations.map(eq => `<div class="equation">${escapeHtml(eq)}</div>`).join('')}
+                    </div>
+                `;
+            }
+
+            // Additional Details
+            if (data.details) {
+                html += `
+                    <div class="result-subsection">
+                        <h3>📚 Additional Details</h3>
+                        <p>${escapeHtml(data.details)}</p>
+                    </div>
+                `;
+            }
+
+            resultContent.innerHTML = html;
+            resultSection.classList.add('show');
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
